@@ -7,7 +7,7 @@ Cada uno tiene su propia base de datos MySQL, que se crea sola al iniciar (`crea
 |-----------------|--------|-----------------|----------|
 | `usuarios`      | 9091   | `usuarios`      | Registro, login, recuperación de contraseña, perfiles, roles y Plan Pro |
 | `cursos`        | 9092   | `cursos`        | Catálogo de capacitaciones |
-| `interacciones` | 9093   | `interacciones` | Favoritos y notas técnicas de los usuarios sobre los cursos |
+| `interacciones` | 9093   | `interacciones` | Inscripciones a cursos, progreso por lección y preguntas al instructor |
 
 App Android: https://github.com/AmaroLC8/MasterMartini
 
@@ -139,6 +139,73 @@ del instructor `instructor@example.com` (`instructorId` = 2). Los videos (`video
 quedan en `null` hasta que se suban a AWS S3. Se guardan en la tabla nueva `capacitaciones` (junto con
 `modulos`, `lecciones`, `capacitacion_logros` y `capacitacion_incluye`); la tabla antigua `cursos`
 ya no se usa y se puede borrar.
+
+## Endpoints de `interacciones` (puerto 9093)
+
+Ruta base: `http://localhost:9093/api`
+
+### Inscripciones y progreso
+
+Todos necesitan el header **`X-Usuario-Id`** (si falta: `403`).
+
+| Método | Ruta | Permiso | Respuesta OK |
+|--------|------|---------|--------------|
+| POST   | `/inscripciones` (body `{"cursoId": 4}`) | Cualquier usuario. Si el curso no es gratis, necesita Plan Pro | 201 |
+| GET    | `/inscripciones/usuario/{usuarioId}` | El mismo usuario o ADMINISTRADOR | 200 |
+| PUT    | `/inscripciones/{id}/lecciones` (body `{"modulo": 0, "leccion": 2, "completada": true}`) | El dueño de la inscripción | 200 |
+| DELETE | `/inscripciones/{id}` | El dueño o ADMINISTRADOR | 204 |
+
+Respuesta: `{id, usuarioId, cursoId, cursoTitulo, fechaInscripcion, leccionesCompletadas}`.
+
+- Al inscribirse: `404 "Curso no encontrado"`, `403 "Necesitas el Plan Pro para este curso"` o
+  `409 "Ya estás inscrito en este curso"`.
+- `leccionesCompletadas` guarda cada lección como `"modulo-leccion"` con posiciones desde 0
+  (ej. `"0-2"` = tercera lección del primer módulo). `modulo` y `leccion` deben ser 0 o mayores.
+- `cursoTitulo` se guarda al inscribirse, para mostrar "mis cursos" sin llamar a `cursos`.
+
+### Preguntas al instructor
+
+| Método | Ruta | Permiso | Respuesta OK |
+|--------|------|---------|--------------|
+| GET    | `/cursos/{cursoId}/preguntas` | Público (de la más nueva a la más antigua) | 200 |
+| POST   | `/cursos/{cursoId}/preguntas` (body `{"texto": "..."}`, máx. 500) | Inscrito en ese curso | 201 |
+| GET    | `/preguntas/pendientes` | INSTRUCTOR (solo las de sus cursos) o ADMINISTRADOR (todas) | 200 |
+| PUT    | `/preguntas/{id}/respuesta` (body `{"respuesta": "..."}`) | El INSTRUCTOR de ese curso o ADMINISTRADOR | 200 |
+| DELETE | `/preguntas/{id}` | El autor o ADMINISTRADOR | 204 |
+
+Respuesta: `{id, cursoId, cursoTitulo, usuarioId, autorNombre, texto, respuesta, respondidaPor, fechaPregunta, fechaRespuesta}`.
+`respuesta`, `respondidaPor` y `fechaRespuesta` vienen en `null` mientras nadie responda.
+Si alguien no inscrito pregunta: `403 "Debes inscribirte en el curso para hacer preguntas"`.
+
+### Comunicación con `usuarios` y `cursos`
+
+`interacciones` no guarda usuarios ni cursos: los consulta por HTTP con `client/UsuariosClient`
+(nombre, rol y Plan Pro) y `client/CursosClient` (título, si es gratis e instructor del curso).
+Por eso, **para inscribirse, preguntar o responder tienen que estar encendidos `usuarios` y `cursos`**.
+Si alguno está apagado, la respuesta es `503` con `"El servicio de usuarios no está disponible"` o
+`"El servicio de cursos no está disponible"`. Ver las preguntas de un curso funciona aunque estén apagados.
+
+Las direcciones se configuran en `interacciones/src/main/resources/application.properties`:
+
+```properties
+usuarios.url=${USUARIOS_URL:http://localhost:9091}
+cursos.url=${CURSOS_URL:http://localhost:9092}
+```
+
+### Datos de prueba
+
+Al iniciar con las tablas vacías se cargan: el cliente Carlos Mendoza (`usuarioId` 1) inscrito en el curso 1
+con las lecciones `"0-0"` y `"0-1"` completadas, y 2 preguntas suyas en ese curso (una ya respondida por la
+Chef Elena Quiroga y otra pendiente). Se guardan en las tablas nuevas `inscripciones`, `inscripcion_lecciones`
+y `preguntas`; la tabla antigua `interacciones` ya no se usa y se puede borrar.
+
+### ¿Por qué los favoritos no están en el backend?
+
+Los cursos favoritos se guardan **en el celular, con Room** (almacenamiento local), y no en este backend:
+son una preferencia personal que no necesita compartirse con nadie, y así la lista funciona aunque no haya
+internet. En cambio, las inscripciones, el progreso y las preguntas sí van al backend (almacenamiento externo):
+el instructor tiene que ver y responder las preguntas, el administrador tiene que poder revisarlas, y el
+progreso se mantiene aunque el usuario cambie de celular.
 
 ## Usuarios de prueba
 
