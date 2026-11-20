@@ -2,15 +2,20 @@ package com.mastermartini.usuarios.exception;
 
 import org.springframework.http.HttpStatus;
 
-public class ApiException extends RuntimeException{
+// Excepción propia para los errores de negocio: guarda el mensaje y el código HTTP que se debe responder
+// (por ejemplo 404 "Usuario no encontrado"). GlobalExceptionHandler la convierte en JSON.
+// Extiende RuntimeException para no tener que declararla con "throws" en cada método.
+public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
 
-    public ApiException(HttpStatus status, String mensaje){
+    public ApiException(HttpStatus status, String mensaje) {
         super(mensaje);
         this.status = status;
     }
-    public HttpStatus getStatus(){
+
+    // Código HTTP que se enviará en la respuesta.
+    public HttpStatus getStatus() {
         return status;
     }
 }
