@@ -2,7 +2,9 @@ package com.mastermartini.cursos.exception;
 
 import org.springframework.http.HttpStatus;
 
-// Excepción de negocio que asocia un código HttpStatus a un mensaje de error.
+// Excepción propia para los errores de negocio: guarda el mensaje y el código HTTP que se debe responder
+// (por ejemplo 404 "Curso no encontrado"). GlobalExceptionHandler la convierte en JSON.
+// Extiende RuntimeException para no tener que declararla con "throws" en cada método.
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
@@ -12,6 +14,7 @@ public class ApiException extends RuntimeException {
         this.status = status;
     }
 
+    // Código HTTP que se enviará en la respuesta.
     public HttpStatus getStatus() {
         return status;
     }

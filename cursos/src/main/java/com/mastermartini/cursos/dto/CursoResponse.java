@@ -2,118 +2,48 @@ package com.mastermartini.cursos.dto;
 
 import com.mastermartini.cursos.model.Curso;
 
-// DTO de salida que expone los datos de un curso hacia los clientes de la API.
-public class CursoResponse {
+import java.util.List;
 
-    private Long id;
-    private String titulo;
-    private String categoria;
-    private String insumo;
-    private String chef;
-    private String duracion;
-    private String nivel;
-    private String urlVideo;
-    private boolean soloPro;
-
-    public CursoResponse() {
-    }
-
-    public CursoResponse(Long id, String titulo, String categoria, String insumo, String chef,
-                         String duracion, String nivel, String urlVideo, boolean soloPro) {
-        this.id = id;
-        this.titulo = titulo;
-        this.categoria = categoria;
-        this.insumo = insumo;
-        this.chef = chef;
-        this.duracion = duracion;
-        this.nivel = nivel;
-        this.urlVideo = urlVideo;
-        this.soloPro = soloPro;
-    }
-
-    public static CursoResponse fromEntity(Curso curso) {
+// Datos completos de un curso que se envían a la app en formato JSON.
+// Los nombres de los campos son EXACTAMENTE los que lee la app (modelo Capacitacion), no se deben cambiar.
+// Es un "record": una clase inmutable cuyos campos se convierten en las claves del JSON.
+public record CursoResponse(
+        Long id,
+        String titulo,
+        String descripcion,
+        String categoria,
+        String nivel,
+        boolean esGratis,
+        Long instructorId,
+        String instructor,
+        String duracionTotal,
+        String insumoPrincipal,
+        String videoResumenUrl,
+        boolean esVegano,
+        List<String> loQueLograras,
+        List<String> incluye,
+        List<ModuloDto> modulos
+) {
+    // Convierte la entidad Curso en la respuesta que ve la app.
+    // Las listas se copian a listas normales: así se leen todas de la base de datos aquí mismo,
+    // dentro de la transacción del servicio (las listas son LAZY).
+    public static CursoResponse desdeEntidad(Curso c) {
         return new CursoResponse(
-                curso.getId(),
-                curso.getTitulo(),
-                curso.getCategoria(),
-                curso.getInsumo(),
-                curso.getChef(),
-                curso.getDuracion(),
-                curso.getNivel(),
-                curso.getUrlVideo(),
-                curso.isSoloPro()
+                c.getId(),
+                c.getTitulo(),
+                c.getDescripcion(),
+                c.getCategoria(),
+                c.getNivel(),
+                c.isEsGratis(),
+                c.getInstructorId(),
+                c.getInstructor(),
+                c.getDuracionTotal(),
+                c.getInsumoPrincipal(),
+                c.getVideoResumenUrl(),
+                c.isEsVegano(),
+                List.copyOf(c.getLoQueLograras()),
+                List.copyOf(c.getIncluye()),
+                c.getModulos().stream().map(ModuloDto::desdeEntidad).toList()
         );
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitulo() {
-        return titulo;
-    }
-
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
-    }
-
-    public String getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(String categoria) {
-        this.categoria = categoria;
-    }
-
-    public String getInsumo() {
-        return insumo;
-    }
-
-    public void setInsumo(String insumo) {
-        this.insumo = insumo;
-    }
-
-    public String getChef() {
-        return chef;
-    }
-
-    public void setChef(String chef) {
-        this.chef = chef;
-    }
-
-    public String getDuracion() {
-        return duracion;
-    }
-
-    public void setDuracion(String duracion) {
-        this.duracion = duracion;
-    }
-
-    public String getNivel() {
-        return nivel;
-    }
-
-    public void setNivel(String nivel) {
-        this.nivel = nivel;
-    }
-
-    public String getUrlVideo() {
-        return urlVideo;
-    }
-
-    public void setUrlVideo(String urlVideo) {
-        this.urlVideo = urlVideo;
-    }
-
-    public boolean isSoloPro() {
-        return soloPro;
-    }
-
-    public void setSoloPro(boolean soloPro) {
-        this.soloPro = soloPro;
     }
 }

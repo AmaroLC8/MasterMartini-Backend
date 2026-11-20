@@ -10,18 +10,22 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 // Carga los usuarios iniciales en la base de datos si aún no existen registros.
+// @Component: registra la clase en Spring para que la cree e inyecte sus dependencias.
+// Al implementar CommandLineRunner, Spring ejecuta el método run() una vez, apenas arranca la aplicación.
 @Component
 public class DataSeeder implements CommandLineRunner {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
+    // Spring entrega el repositorio y el codificador de contraseñas por el constructor.
     public DataSeeder(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Inserta en orden los 4 usuarios de demostración con contraseña encriptada.
+    // Inserta en orden los 4 usuarios de demostración (ids 1 a 4), todos con la contraseña Demo1234 encriptada.
+    // @Override: indica que este método implementa el run() de CommandLineRunner.
     @Override
     public void run(String... args) {
         if (usuarioRepository.count() == 0) {

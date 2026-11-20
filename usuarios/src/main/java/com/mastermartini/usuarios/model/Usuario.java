@@ -3,21 +3,27 @@ package com.mastermartini.usuarios.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+// Entidad que representa la tabla "usuarios" en MySQL: cada objeto Usuario es una fila.
+// Hibernate crea o actualiza la tabla automáticamente (spring.jpa.hibernate.ddl-auto=update).
+// @Entity: marca la clase como entidad JPA, es decir, que se guarda en la base de datos.
+// @Table: indica el nombre de la tabla.
 @Entity
 @Table(name = "usuarios")
 public class Usuario {
 
+    // @Id: llave primaria de la tabla. @GeneratedValue: MySQL genera el valor automáticamente.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Autoincremental: 1, 2, 3, 4...
     private Long id;
 
+    // @Column: configura la columna (nullable = false equivale a NOT NULL, unique impide repetidos).
     @Column(nullable = false)
     private String nombre;
 
-    @Column(nullable = false, unique = true, length = 12) // Impide RUTs repetidos en BD
+    @Column(nullable = false, unique = true, length = 12) // Impide RUTs repetidos en BD; se guarda sin puntos y con K mayúscula
     private String rut;
 
-    @Column(nullable = false, unique = true) // Impide correos repetidos en BD
+    @Column(nullable = false, unique = true) // Impide correos repetidos en BD; se guarda en minúsculas
     private String correo;
 
     @Column(nullable = false, length = 9)
@@ -47,6 +53,7 @@ public class Usuario {
     public Usuario() {
     }
 
+    // Constructor con todos los datos, usado al registrar y en DataSeeder (el id lo genera MySQL).
     public Usuario(String nombre, String rut, String correo, String telefono,
                    String rubro, String personasNegocio, String password,
                    Rol rol, boolean planPro) {
