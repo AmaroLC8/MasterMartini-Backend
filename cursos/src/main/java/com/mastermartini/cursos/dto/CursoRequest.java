@@ -1,97 +1,59 @@
 package com.mastermartini.cursos.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 
-// DTO de entrada con los datos validados para crear o actualizar un curso.
-public class CursoRequest {
+import java.util.List;
 
-    @NotBlank(message = "El título es obligatorio")
-    private String titulo;
+// Datos que se envían para crear (POST) o editar (PUT) un curso.
+// Son los mismos campos de CursoResponse, sin "id" (lo genera MySQL) ni "instructorId"
+// (se toma del usuario que hace la petición, header X-Usuario-Id).
+// @NotBlank: el campo no puede venir nulo, vacío ni solo con espacios.
+// @Pattern: el texto debe calzar con la expresión regular (aquí, una de las opciones permitidas).
+// @NotEmpty: la lista no puede venir nula ni vacía.
+// @Valid: valida también cada elemento de la lista con sus propias reglas (ModuloDto y LeccionDto).
+public record CursoRequest(
+        @NotBlank(message = "El título es obligatorio")
+        String titulo,
 
-    @NotBlank(message = "La categoría es obligatoria")
-    private String categoria;
+        @NotBlank(message = "La descripción es obligatoria")
+        String descripcion,
 
-    @NotBlank(message = "El insumo es obligatorio")
-    private String insumo;
+        @NotBlank(message = "La categoría es obligatoria")
+        @Pattern(regexp = "Chocolatería|Pastelería|Panadería|Heladería|Decoración",
+                message = "La categoría debe ser Chocolatería, Pastelería, Panadería, Heladería o Decoración")
+        String categoria,
 
-    @NotBlank(message = "El chef es obligatorio")
-    private String chef;
+        @NotBlank(message = "El nivel es obligatorio")
+        @Pattern(regexp = "Básico|Intermedio|Avanzado",
+                message = "El nivel debe ser Básico, Intermedio o Avanzado")
+        String nivel,
 
-    @NotBlank(message = "La duración es obligatoria")
-    private String duracion;
+        // Si no viene en el JSON queda en false.
+        boolean esGratis,
 
-    @NotBlank(message = "El nivel es obligatorio")
-    private String nivel;
+        @NotBlank(message = "El instructor es obligatorio")
+        String instructor,
 
-    @NotBlank(message = "La URL del video es obligatoria")
-    private String urlVideo;
+        @NotBlank(message = "La duración total es obligatoria")
+        String duracionTotal,
 
-    private boolean soloPro = false;
+        @NotBlank(message = "El insumo principal es obligatorio")
+        String insumoPrincipal,
 
-    public CursoRequest() {
-    }
+        // Opcional: null mientras no se suban los videos a AWS S3.
+        String videoResumenUrl,
 
-    public String getTitulo() {
-        return titulo;
-    }
+        // Si no viene en el JSON queda en false.
+        boolean esVegano,
 
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
-    }
+        // Opcionales: si no vienen, se guardan como listas vacías.
+        List<String> loQueLograras,
+        List<String> incluye,
 
-    public String getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(String categoria) {
-        this.categoria = categoria;
-    }
-
-    public String getInsumo() {
-        return insumo;
-    }
-
-    public void setInsumo(String insumo) {
-        this.insumo = insumo;
-    }
-
-    public String getChef() {
-        return chef;
-    }
-
-    public void setChef(String chef) {
-        this.chef = chef;
-    }
-
-    public String getDuracion() {
-        return duracion;
-    }
-
-    public void setDuracion(String duracion) {
-        this.duracion = duracion;
-    }
-
-    public String getNivel() {
-        return nivel;
-    }
-
-    public void setNivel(String nivel) {
-        this.nivel = nivel;
-    }
-
-    public String getUrlVideo() {
-        return urlVideo;
-    }
-
-    public void setUrlVideo(String urlVideo) {
-        this.urlVideo = urlVideo;
-    }
-
-    public boolean isSoloPro() {
-        return soloPro;
-    }
-
-    public void setSoloPro(boolean soloPro) {
-        this.soloPro = soloPro;
-    }
-}
+        @NotEmpty(message = "El curso debe tener al menos 1 módulo")
+        @Valid
+        List<ModuloDto> modulos
+) {}
