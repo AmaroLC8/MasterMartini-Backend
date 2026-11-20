@@ -88,6 +88,58 @@ Todos los errores tienen el formato:
 
 Los errores de validación agregan `"campos"` con el mensaje de cada campo inválido.
 
+## Endpoints de `cursos` (puerto 9092)
+
+Ruta base: `http://localhost:9092/api/cursos`
+
+Cada curso trae sus módulos y lecciones (Curso → Módulos → Lecciones), con los mismos campos que el
+modelo `Capacitacion` de la app: `id`, `titulo`, `descripcion`, `categoria`, `nivel`, `esGratis`,
+`instructorId`, `instructor`, `duracionTotal`, `insumoPrincipal`, `videoResumenUrl`, `esVegano`,
+`loQueLograras`, `incluye` y `modulos` (cada módulo: `titulo`, `lecciones`; cada lección:
+`titulo`, `descripcion`, `duracion`, `videoUrl`).
+
+| Método | Ruta    | Permiso | Respuesta OK |
+|--------|---------|---------|--------------|
+| GET    | `/` (opcionales y combinables: `?categoria=Panadería&gratis=true`) | Público | 200 |
+| GET    | `/{id}` | Público (404 si no existe) | 200 |
+| POST   | `/`     | INSTRUCTOR o ADMINISTRADOR (el curso queda con `instructorId` = id de quien lo crea) | 201 |
+| PUT    | `/{id}` | El INSTRUCTOR dueño del curso o un ADMINISTRADOR | 200 |
+| DELETE | `/{id}` | ADMINISTRADOR | 204 |
+
+POST, PUT y DELETE necesitan el header **`X-Usuario-Id`** (si falta: `403`).
+
+Validaciones al crear o editar: `titulo`, `descripcion`, `instructor`, `duracionTotal` e `insumoPrincipal`
+son obligatorios; `categoria` debe ser `Chocolatería`, `Pastelería`, `Panadería`, `Heladería` o `Decoración`;
+`nivel` debe ser `Básico`, `Intermedio` o `Avanzado`; debe haber al menos 1 módulo y cada módulo al menos
+1 lección (con `titulo`, `descripcion` y `duracion`).
+
+### Comunicación con el microservicio `usuarios`
+
+`cursos` no guarda usuarios. Para saber si alguien puede crear, editar o borrar un curso, le pregunta su rol
+al microservicio `usuarios` (`GET /api/usuarios/{id}`), usando la clase `client/UsuariosClient`.
+Por eso, **para crear, editar o borrar cursos el microservicio `usuarios` tiene que estar encendido**:
+
+- Si `usuarios` está apagado → `503 {"mensaje": "El servicio de usuarios no está disponible", "estado": 503}`.
+- Si el usuario del header no existe → `403 "No tienes permiso para realizar esta acción"`.
+- Listar y ver el detalle de cursos funcionan aunque `usuarios` esté apagado.
+
+La dirección de `usuarios` se configura en `cursos/src/main/resources/application.properties`:
+
+```properties
+usuarios.url=${USUARIOS_URL:http://localhost:9091}
+```
+
+Por defecto es `http://localhost:9091`. Si `usuarios` corre en otra dirección, se define la variable de
+entorno `USUARIOS_URL` (igual que `DB_PASSWORD`, en IntelliJ o en la terminal).
+
+### Cursos iniciales
+
+Al iniciar por primera vez se cargan los 6 cursos de la app (3 básicos gratis y 3 del Plan Pro), todos a nombre
+del instructor `instructor@example.com` (`instructorId` = 2). Los videos (`videoResumenUrl` y `videoUrl`)
+quedan en `null` hasta que se suban a AWS S3. Se guardan en la tabla nueva `capacitaciones` (junto con
+`modulos`, `lecciones`, `capacitacion_logros` y `capacitacion_incluye`); la tabla antigua `cursos`
+ya no se usa y se puede borrar.
+
 ## Usuarios de prueba
 
 Se crean automáticamente la primera vez que se inicia `usuarios` (si la tabla está vacía).
